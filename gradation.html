@@ -1,0 +1,92 @@
+<!DOCTYPE html><html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gradient Text Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #output { font-size: 24px; margin-top: 20px; white-space: pre; }
+        #codeOutput { margin-top: 20px; padding: 10px; border: 1px solid #000; background-color: #f4f4f4; white-space: pre-wrap; text-align: left; width: 80%; height: 100px; }
+        #textPreview { margin-top: 10px; font-weight: bold; }
+        #charCount { margin-top: 5px; color: gray; }
+        button { margin-top: 10px; padding: 5px 10px; }
+    </style>
+</head>
+<body>
+    <h1>Gradient Text Generator</h1>
+    <label>Text: <input type="text" id="textInput" value="Gradient" oninput="updatePreview()"></label><br>
+    <p id="textPreview"></p>
+    <p id="charCount">Character Count: 8</p>
+    <label>Start Color: <input type="color" id="startColor" value="#ff0000"></label><br>
+    <label>End Color: <input type="color" id="endColor" value="#0000ff"></label><br>
+    <button onclick="generateGradientText()">Generate</button>
+    <button onclick="copyToClipboard()">Copy All</button>
+    <p>i suggest keeping gradient text within 15 characters. more than 15 characters may cause ohd to break :lox:</p>
+    <div id="output"></div>
+    <textarea id="codeOutput" readonly></textarea>
+    <p>devock - ktr</p>
+    <script>
+        function updatePreview() {
+            const text = document.getElementById("textInput").value;
+            document.getElementById("textPreview").textContent = "Current Text: " + text;
+            document.getElementById("charCount").textContent = "Character Count: " + text.length;
+        }function generateGradientText() {
+        const text = document.getElementById("textInput").value;
+        const startColor = document.getElementById("startColor").value;
+        const endColor = document.getElementById("endColor").value;
+        const output = document.getElementById("output");
+        const codeOutput = document.getElementById("codeOutput");
+        
+        output.innerHTML = "";
+        codeOutput.value = "";
+        const textLength = text.length;
+        let codeString = "";
+        
+        for (let i = 0; i < textLength; i++) {
+            let ratio = i / (textLength - 1);
+            let colorHex = interpolateColor(startColor, endColor, ratio);
+            let span = document.createElement("span");
+            span.style.color = "#" + colorHex;
+            span.textContent = text[i];
+            output.appendChild(span);
+            
+            codeString += `<c${colorHex}>${text[i]}`;
+        }
+        codeOutput.value = codeString;
+    }
+
+    function interpolateColor(start, end, ratio) {
+        const startRGB = hexToRgb(start);
+        const endRGB = hexToRgb(end);
+        const resultRGB = {
+            r: Math.round(startRGB.r + (endRGB.r - startRGB.r) * ratio),
+            g: Math.round(startRGB.g + (endRGB.g - startRGB.g) * ratio),
+            b: Math.round(startRGB.b + (endRGB.b - startRGB.b) * ratio)
+        };
+        return toHex(resultRGB.r) + toHex(resultRGB.g) + toHex(resultRGB.b);
+    }
+
+    function hexToRgb(hex) {
+        let bigint = parseInt(hex.slice(1), 16);
+        return {
+            r: (bigint >> 16) & 255,
+            g: (bigint >> 8) & 255,
+            b: bigint & 255
+        };
+    }
+
+    function toHex(value) {
+        return ("0" + value.toString(16)).slice(-2);
+    }
+
+    function copyToClipboard() {
+        const codeOutput = document.getElementById("codeOutput");
+        codeOutput.select();
+        codeOutput.setSelectionRange(0, 99999);
+        document.execCommand("copy");
+        alert("Copied to clipboard!");
+    }
+</script>
+
+</body>
+</html>
