@@ -1,92 +1,178 @@
 <!DOCTYPE html><html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gradient Text Generator</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        #output { font-size: 24px; margin-top: 20px; white-space: pre; }
-        #codeOutput { margin-top: 20px; padding: 10px; border: 1px solid #000; background-color: #f4f4f4; white-space: pre-wrap; text-align: left; width: 80%; height: 100px; }
-        #textPreview { margin-top: 10px; font-weight: bold; }
-        #charCount { margin-top: 5px; color: gray; }
-        button { margin-top: 10px; padding: 5px 10px; }
-    </style>
+<meta charset="UTF-8">
+<title>Gradient Color Tool</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    background: #f5f5f5;
+  }
+  #textInput {
+    width: 100%;
+    font-size: 24px;
+    padding: 10px;
+  }
+  #output {
+    white-space: pre-wrap;
+    background: #eee;
+    padding: 10px;
+    margin-top: 20px;
+    font-family: monospace;
+  }
+  .char {
+    display: inline-block;
+    cursor: pointer;
+    padding: 2px;
+    transition: background 0.3s;
+  }
+  .char.selected {
+    background: #ddd;
+    border-radius: 4px;
+  }
+  #colorPicker {
+    display: none;
+  }
+  button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  #info {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #666;
+  }
+</style>
 </head>
-<body>
-    <h1>Gradient Text Generator</h1>
-    <label>Text: <input type="text" id="textInput" value="Gradient" oninput="updatePreview()"></label><br>
-    <p id="textPreview"></p>
-    <p id="charCount">Character Count: 8</p>
-    <label>Start Color: <input type="color" id="startColor" value="#ff0000"></label><br>
-    <label>End Color: <input type="color" id="endColor" value="#0000ff"></label><br>
-    <button onclick="generateGradientText()">Generate</button>
-    <button onclick="copyToClipboard()">Copy All</button>
-    <p>i suggest keeping gradient text within 15 characters. more than 15 characters may cause ohd to break :lox:</p>
-    <div id="output"></div>
-    <textarea id="codeOutput" readonly></textarea>
-    <p>devock - ktr</p>
-    <script>
-        function updatePreview() {
-            const text = document.getElementById("textInput").value;
-            document.getElementById("textPreview").textContent = "Current Text: " + text;
-            document.getElementById("charCount").textContent = "Character Count: " + text.length;
-        }function generateGradientText() {
-        const text = document.getElementById("textInput").value;
-        const startColor = document.getElementById("startColor").value;
-        const endColor = document.getElementById("endColor").value;
-        const output = document.getElementById("output");
-        const codeOutput = document.getElementById("codeOutput");
-        
-        output.innerHTML = "";
-        codeOutput.value = "";
-        const textLength = text.length;
-        let codeString = "";
-        
-        for (let i = 0; i < textLength; i++) {
-            let ratio = i / (textLength - 1);
-            let colorHex = interpolateColor(startColor, endColor, ratio);
-            let span = document.createElement("span");
-            span.style.color = "#" + colorHex;
-            span.textContent = text[i];
-            output.appendChild(span);
-            
-            codeString += `<c${colorHex}>${text[i]}`;
-        }
-        codeOutput.value = codeString;
+<body><h2>Gradient Color Tool</h2>
+<textarea id="textInput" placeholder="Enter your text here..."></textarea>
+<div id="charContainer"></div>
+<input type="color" id="colorPicker">
+<div>
+  <button onclick="resetSelection()">Reset All</button>
+  <button onclick="copyOutput()">Copy All</button>
+</div>
+<div id="info">Recommended: Keep under 15 characters for best server compatibility.</div>
+<div id="charCount">Character Count: 0</div>
+<pre id="output"></pre><script>
+let charColors = {};
+let selectedIndex = null;
+
+const textInput = document.getElementById('textInput');
+const charContainer = document.getElementById('charContainer');
+const colorPicker = document.getElementById('colorPicker');
+const output = document.getElementById('output');
+const charCount = document.getElementById('charCount');
+
+textInput.addEventListener('input', updateChars);
+
+function updateChars() {
+  charContainer.innerHTML = '';
+  charColors = {};
+  const text = textInput.value;
+  text.split('').forEach((char, index) => {
+    const span = document.createElement('span');
+    span.className = 'char';
+    span.textContent = char;
+    span.addEventListener('click', () => selectChar(index));
+    charContainer.appendChild(span);
+  });
+  charCount.textContent = `Character Count: ${text.length}`;
+  generateOutput();
+}
+
+function selectChar(index) {
+  selectedIndex = index;
+  colorPicker.click();
+}
+
+colorPicker.addEventListener('input', () => {
+  if (selectedIndex !== null) {
+    charColors[selectedIndex] = colorPicker.value;
+    updateCharStyles();
+    generateOutput();
+  }
+});
+
+function updateCharStyles() {
+  const spans = document.querySelectorAll('.char');
+  spans.forEach((span, i) => {
+    if (charColors[i]) {
+      span.style.background = charColors[i];
+    } else {
+      span.style.background = '';
+    }
+  });
+}
+
+function interpolateColor(color1, color2, factor) {
+  const c1 = parseInt(color1.slice(1), 16);
+  const c2 = parseInt(color2.slice(1), 16);
+
+  const r1 = (c1 >> 16) & 0xff;
+  const g1 = (c1 >> 8) & 0xff;
+  const b1 = c1 & 0xff;
+
+  const r2 = (c2 >> 16) & 0xff;
+  const g2 = (c2 >> 8) & 0xff;
+  const b2 = c2 & 0xff;
+
+  const r = Math.round(r1 + factor * (r2 - r1));
+  const g = Math.round(g1 + factor * (g2 - g1));
+  const b = Math.round(b1 + factor * (b2 - b1));
+
+  return `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
+}
+
+function generateOutput() {
+  const text = textInput.value;
+  if (!text) {
+    output.textContent = '';
+    return;
+  }
+
+  let points = Object.keys(charColors).map(Number).sort((a, b) => a - b);
+  let result = '';
+
+  for (let i = 0; i < text.length; i++) {
+    let color = null;
+    if (charColors[i]) {
+      color = charColors[i];
+    } else {
+      let prev = points.filter(p => p < i).pop();
+      let next = points.find(p => p > i);
+
+      if (prev !== undefined && next !== undefined) {
+        let factor = (i - prev) / (next - prev);
+        color = interpolateColor(charColors[prev], charColors[next], factor);
+      } else if (prev !== undefined) {
+        color = charColors[prev];
+      } else if (next !== undefined) {
+        color = charColors[next];
+      } else {
+        color = '#ffffff';
+      }
     }
 
-    function interpolateColor(start, end, ratio) {
-        const startRGB = hexToRgb(start);
-        const endRGB = hexToRgb(end);
-        const resultRGB = {
-            r: Math.round(startRGB.r + (endRGB.r - startRGB.r) * ratio),
-            g: Math.round(startRGB.g + (endRGB.g - startRGB.g) * ratio),
-            b: Math.round(startRGB.b + (endRGB.b - startRGB.b) * ratio)
-        };
-        return toHex(resultRGB.r) + toHex(resultRGB.g) + toHex(resultRGB.b);
-    }
+    result += `<c${color.slice(1)}>${text[i]}`;
+  }
 
-    function hexToRgb(hex) {
-        let bigint = parseInt(hex.slice(1), 16);
-        return {
-            r: (bigint >> 16) & 255,
-            g: (bigint >> 8) & 255,
-            b: bigint & 255
-        };
-    }
+  result += '</c>';
+  output.textContent = result;
+}
 
-    function toHex(value) {
-        return ("0" + value.toString(16)).slice(-2);
-    }
+function resetSelection() {
+  charColors = {};
+  updateCharStyles();
+  generateOutput();
+}
 
-    function copyToClipboard() {
-        const codeOutput = document.getElementById("codeOutput");
-        codeOutput.select();
-        codeOutput.setSelectionRange(0, 99999);
-        document.execCommand("copy");
-        alert("Copied to clipboard!");
-    }
-</script>
-
-</body>
+function copyOutput() {
+  navigator.clipboard.writeText(output.textContent)
+    .then(() => alert('Copied!'))
+    .catch(err => alert('Failed to copy!'));
+}
+</script></body>
 </html>
