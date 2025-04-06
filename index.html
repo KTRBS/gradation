@@ -12,13 +12,13 @@
     padding: 20px;
   }
   h1 {
-    font-size: 24px;
+    font-size: 28px;
     margin-bottom: 20px;
   }
   #textInput {
-    width: 90%;
+    width: 80%;
     padding: 10px;
-    font-size: 20px;
+    font-size: 18px;
     border-radius: 8px;
     border: 1px solid #ccc;
     margin-bottom: 10px;
@@ -64,7 +64,7 @@
     background: #45a049;
   }
   #output {
-    width: 90%;
+    width: 80%;
     height: 150px;
     margin-top: 20px;
     font-size: 16px;
@@ -84,27 +84,36 @@
     position: absolute;
     pointer-events: none;
   }
+  .footer {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #666;
+  }
 </style>
 </head>
 <body>
 
-<h1>Gradient Generator</h1>
+<h1>Gradient Text Generator</h1>
 
-<input type="text" id="textInput" placeholder="Enter text" oninput="updatePreview()">
 <div id="charCount">0 characters</div>
 
+<input type="text" id="textInput" placeholder="Enter text" oninput="updatePreview()">
 <div id="preview"></div>
 
-<button onclick="copyOutput()">Copy All</button>
-<button onclick="resetAll()">Reset</button>
+<input type="color" id="colorPicker">
 
-<textarea id="output" readonly></textarea>
+<button onclick="generateOutput()">Generate</button>
+<button onclick="copyOutput()">Copy</button>
 
 <div id="note">
   It is recommended to keep text within 15 characters on most servers. Exceeding this may cause issues (OHD may break).
 </div>
 
-<input type="color" id="colorPicker">
+<textarea id="output" readonly></textarea>
+
+<div class="footer">
+  Devock - ktr
+</div>
 
 <script>
 let colorPoints = {};
@@ -204,14 +213,6 @@ function copyOutput() {
   navigator.clipboard.writeText(output.value).then(() => {
     alert('Copied!');
   });
-}
-
-function resetAll() {
-  document.getElementById('textInput').value = '';
-  document.getElementById('output').value = '';
-  document.getElementById('preview').innerHTML = '';
-  colorPoints = {};
-  document.getElementById('charCount').innerText = '0 characters';
 }
 </script>
 
