@@ -38,6 +38,7 @@
     overflow-x: auto;
     white-space: nowrap;
     max-width: 95%;
+    height: 40px;
   }
   .char {
     display: inline-block;
@@ -190,6 +191,42 @@ function generateOutput() {
   result += `</c>`;
 
   document.getElementById('output').value = result;
+  updateGradientPreview(result);
+}
+
+function updateGradientPreview(text) {
+  const preview = document.getElementById('preview');
+  let gradientText = '';
+
+  // Create a gradient by color interpolation
+  const colorIndexes = Object.keys(colorPoints).map(Number).sort((a, b) => a - b);
+  let currentColorIndex = 0;
+  let startIdx = colorIndexes[currentColorIndex];
+  let startColor = colorPoints[startIdx];
+
+  for (let i = 0; i < text.length; i++) {
+    if (currentColorIndex < colorIndexes.length - 1 && i > colorIndexes[currentColorIndex + 1]) {
+      currentColorIndex++;
+      startIdx = colorIndexes[currentColorIndex];
+      startColor = colorPoints[startIdx];
+    }
+
+    let nextIdx = colorIndexes[currentColorIndex + 1] ?? text.length - 1;
+    let nextColor = colorPoints[nextIdx] ?? startColor;
+
+    let ratio = (i - startIdx) / (nextIdx - startIdx || 1);
+    const startRGB = hexToRgb(startColor);
+    const endRGB = hexToRgb(nextColor);
+
+    const r = Math.round(startRGB.r + (endRGB.r - startRGB.r) * ratio);
+    const g = Math.round(startRGB.g + (endRGB.g - startRGB.g) * ratio);
+    const b = Math.round(startRGB.b + (endRGB.b - startRGB.b) * ratio);
+
+    const hex = rgbToHex(r, g, b);
+    gradientText += `<span style="color: #${hex};">${text[i]}</span>`;
+  }
+
+  preview.innerHTML = gradientText;
 }
 
 function hexToRgb(hex) {
