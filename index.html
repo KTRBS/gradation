@@ -66,8 +66,12 @@
 
 <div id="note">It is recommended to keep text within 15 characters on most servers. Exceeding this may cause issues (OHD may break).</div>
 
+<!-- カラーピッカーをここに常に持っておく -->
+<input type="color" id="colorPicker" style="display:none;">
+
 <script>
 let colorPoints = {};
+let currentIndex = null; // どの文字を選んだか保存する
 
 function updatePreview() {
   const preview = document.getElementById('preview');
@@ -88,18 +92,19 @@ function updatePreview() {
 }
 
 function pickColor(index) {
-  const input = document.createElement('input');
-  input.type = 'color';
-  input.style.position = 'absolute';
-  input.style.left = '-9999px';
-  input.addEventListener('input', function() {
-    colorPoints[index] = input.value;
-    updatePreview();
-  });
-  document.body.appendChild(input);
-  input.click();
-  document.body.removeChild(input);
+  currentIndex = index;
+  const colorPicker = document.getElementById('colorPicker');
+  colorPicker.click();
 }
+
+// カラーピッカーで色が選ばれた時
+document.getElementById('colorPicker').addEventListener('input', function(event) {
+  const color = event.target.value;
+  if (currentIndex !== null) {
+    colorPoints[currentIndex] = color;
+    updatePreview();
+  }
+});
 
 function generateOutput() {
   const text = document.getElementById('textInput').value;
