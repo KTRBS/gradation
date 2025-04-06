@@ -1,30 +1,72 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gradient Color Tool</title>
 <style>
-  body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background: #f5f5f5; }
-  input[type="text"] { width: 80%; padding: 10px; font-size: 18px; margin-bottom: 10px; }
-  #preview { margin: 20px 0; font-size: 24px; word-break: break-word; }
-  .char { cursor: pointer; padding: 2px 4px; border-radius: 4px; margin: 1px; transition: background 0.3s; display: inline-block; }
-  .char:hover { background: #ddd; }
-  .marker { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 10px solid #555; margin: 5px auto; cursor: pointer; }
-  #output { width: 80%; height: 150px; margin-top: 20px; }
-  button { margin: 10px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
-  #charCount { margin-top: 10px; font-size: 16px; }
-  #note { margin-top: 10px; color: #777; font-size: 14px; }
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+    text-align: center;
+    margin: 0;
+    padding: 20px;
+  }
+  #textInput {
+    width: 80%;
+    padding: 10px;
+    font-size: 20px;
+  }
+  #preview {
+    margin: 20px 0;
+    font-size: 30px;
+    word-break: break-word;
+  }
+  .char {
+    display: inline-block;
+    margin: 2px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .char:hover {
+    transform: scale(1.2);
+  }
+  #output {
+    width: 80%;
+    height: 150px;
+    margin-top: 20px;
+    font-size: 16px;
+    padding: 10px;
+  }
+  button {
+    margin: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  #charCount, #note {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #333;
+  }
 </style>
 </head>
-<body><h1>Gradient Color Tool</h1>
+<body>
+
+<h1>Gradient Color Tool</h1>
+
 <input type="text" id="textInput" placeholder="Enter your text here" oninput="updatePreview()">
-<div id="preview"></div>
-<textarea id="output" readonly></textarea>
-<br>
-<button onclick="copyAll()">Copy All</button>
-<button onclick="resetAll()">Reset All</button>
 <div id="charCount">0 characters</div>
-<div id="note">It is recommended to keep gradients within 15 characters on most servers. Longer may break OHD.</div><script>
+
+<div id="preview"></div>
+
+<button onclick="copyOutput()">Copy All</button>
+<button onclick="resetAll()">Reset</button>
+
+<textarea id="output" readonly></textarea>
+
+<div id="note">It is recommended to keep text within 15 characters on most servers. Exceeding this may cause issues (OHD may break).</div>
+
+<script>
 let colorPoints = {};
 
 function updatePreview() {
@@ -35,6 +77,9 @@ function updatePreview() {
     const span = document.createElement('span');
     span.className = 'char';
     span.textContent = text[i];
+    if (colorPoints[i]) {
+      span.style.color = colorPoints[i];
+    }
     span.onclick = function() { pickColor(i); };
     preview.appendChild(span);
   }
@@ -49,75 +94,85 @@ function pickColor(index) {
   input.style.left = '-9999px';
   input.addEventListener('input', function() {
     colorPoints[index] = input.value;
-    generateOutput();
+    updatePreview();
   });
   document.body.appendChild(input);
   input.click();
   document.body.removeChild(input);
 }
 
-function hex(c) {
-  return ('0' + c.toString(16)).slice(-2);
-}
-
-function interpolateColor(c1, c2, factor) {
-  const result = c1.slice();
-  for (let i = 0; i < 3; i++) {
-    result[i] = Math.round(result[i] + factor * (c2[i] - c1[i]));
-  }
-  return result;
-}
-
-function parseHexColor(hexStr) {
-  return [parseInt(hexStr.substr(1,2),16), parseInt(hexStr.substr(3,2),16), parseInt(hexStr.substr(5,2),16)];
-}
-
-function colorToTag(rgb) {
-  return '<c' + hex(rgb[0]) + hex(rgb[1]) + hex(rgb[2]) + '>';
-}
-
 function generateOutput() {
   const text = document.getElementById('textInput').value;
-  if (!text) {
-    document.getElementById('output').value = '';
-    return;
-  }
+  const colorIndexes = Object.keys(colorPoints).map(Number).sort((a, b) => a - b);
 
-  let indices = Object.keys(colorPoints).map(Number).sort((a, b) => a - b);
-  if (indices.length === 0) {
+  if (colorIndexes.length === 0) {
     document.getElementById('output').value = text;
     return;
   }
 
-  let output = '';
-  let current = 0;
+  let result = '';
+  let currentColorIndex = 0;
+  let startIdx = colorIndexes[currentColorIndex];
+  let startColor = colorPoints[startIdx];
 
-  for (let i = 0; i < indices.length; i++) {
-    const start = indices[i];
-    const end = (i + 1 < indices.length) ? indices[i+1] : text.length;
-    const colorStart = parseHexColor(colorPoints[start]);
-    const colorEnd = (i + 1 < indices.length) ? parseHexColor(colorPoints[indices[i+1]]) : colorStart;
-
-    for (let j = start; j < end; j++) {
-      let factor = (end - start <= 1) ? 0 : (j - start) / (end - start - 1);
-      const rgb = interpolateColor(colorStart, colorEnd, factor);
-      output += colorToTag(rgb) + text[j];
+  for (let i = 0; i < text.length; i++) {
+    if (currentColorIndex < colorIndexes.length - 1 && i > colorIndexes[currentColorIndex + 1]) {
+      currentColorIndex++;
+      startIdx = colorIndexes[currentColorIndex];
+      startColor = colorPoints[startIdx];
     }
+
+    let nextIdx = colorIndexes[currentColorIndex + 1] ?? text.length - 1;
+    let nextColor = colorPoints[nextIdx] ?? startColor;
+
+    let ratio = (i - startIdx) / (nextIdx - startIdx || 1);
+    const startRGB = hexToRgb(startColor);
+    const endRGB = hexToRgb(nextColor);
+
+    const r = Math.round(startRGB.r + (endRGB.r - startRGB.r) * ratio);
+    const g = Math.round(startRGB.g + (endRGB.g - startRGB.g) * ratio);
+    const b = Math.round(startRGB.b + (endRGB.b - startRGB.b) * ratio);
+
+    const hex = rgbToHex(r, g, b);
+    result += `<c${hex}>${text[i]}`;
   }
-  output += '</c>';
-  document.getElementById('output').value = output;
+  result += `</c>`;
+
+  document.getElementById('output').value = result;
 }
 
-function copyAll() {
+function hexToRgb(hex) {
+  hex = hex.replace('#', '');
+  return {
+    r: parseInt(hex.substring(0,2), 16),
+    g: parseInt(hex.substring(2,4), 16),
+    b: parseInt(hex.substring(4,6), 16)
+  };
+}
+
+function rgbToHex(r, g, b) {
+  return (
+    r.toString(16).padStart(2, '0') +
+    g.toString(16).padStart(2, '0') +
+    b.toString(16).padStart(2, '0')
+  );
+}
+
+function copyOutput() {
   const output = document.getElementById('output');
   output.select();
   document.execCommand('copy');
+  alert('Copied!');
 }
 
 function resetAll() {
   document.getElementById('textInput').value = '';
+  document.getElementById('output').value = '';
+  document.getElementById('preview').innerHTML = '';
   colorPoints = {};
-  updatePreview();
+  document.getElementById('charCount').innerText = '0 characters';
 }
-</script></body>
+</script>
+
+</body>
 </html>
